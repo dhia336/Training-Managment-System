@@ -4,3 +4,4 @@ app/.env
 __pycache__/
 *.pyo
 *.pyd
+app/routes/__pycache__

@@ -1,4 +1,4 @@
-from passlib.context import CryptContext
+import bcrypt
 from fastapi import HTTPException, status
 from app.database import get_db_connection
 from jose import JWTError, jwt
@@ -28,13 +28,26 @@ def verify_access_token(token: str):
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against a bcrypt hash."""
+    try:
+        # Handle both string and bytes
+        if isinstance(hashed_password, str):
+            hashed_password = hashed_password.encode('utf-8')
+        if isinstance(plain_password, str):
+            plain_password = plain_password.encode('utf-8')
+        return bcrypt.checkpw(plain_password, hashed_password)
+    except Exception:
+        return False
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def get_password_hash(password: str) -> str:
+    """Hash a password using bcrypt."""
+    # Generate salt and hash password
+    salt = bcrypt.gensalt()
+    if isinstance(password, str):
+        password = password.encode('utf-8')
+    hashed = bcrypt.hashpw(password, salt)
+    return hashed.decode('utf-8')
 
 def authenticate_admin(username: str, password: str):
     conn = get_db_connection()
